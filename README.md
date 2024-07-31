@@ -146,3 +146,7 @@ There are various materials technology and you can choose from:
 - SLS - 3201PA-F Nylon
 
 ![PrintBed.png](docs/img/PrintBed.png)
+
+## Contribution
+
+Are you passionate about open-source development? We invite you to contribute to our GitHub repository! Whether you're a seasoned developer or just starting out, your ideas, code, and feedback are invaluable. Join our community, collaborate with like-minded individuals, and help us build something amazing together. Every contribution, no matter how small, makes a difference. Fork the repo, dive into the issues, and let's make this project even better!
