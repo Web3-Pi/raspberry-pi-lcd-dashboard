@@ -1,10 +1,19 @@
 # Raspberry Pi LCD Dashboard
 
-***Unique hardware dashboard for Raspberry Pi 4/5 with 3D model for Argon Neo 5 enclosure*** 
+***Unique hardware dashboard for Raspberry Pi 4 and Raspberry Pi 5 with 3D model for Argon Neo 5 enclosure*** 
 
 ***This repository is part of the [Web3Pi](https://www.web3pi.io) initiative, which enables the automated deployment of a full Ethereum node on a Raspberry Pi.***
 
-The project allows for the installation of a colorful LCD in the Argon Neo 5 enclosure.
+This project allows you to install a color LCD display in the Argon Neo 5 case and display the following system parameters:
+
+- CPU Usage
+- CPU Temperature
+- RAM Usage
+- SWAP Memory Usage
+- Storage Usage
+- IP / Hostname
+- Network Traffic (eth0/WiFi)
+
 We have designed our own 3D model of the enclosure cover with a space for the display. The assembly is simple, using snap-fits, with no tools required. The models are open-source, so anyone can print them on a 3D printer. The source code is also open-source, allowing users to add new functionalities, customize it to their needs, or add support for new displays.
 
 <p align="center">
@@ -15,7 +24,8 @@ We have designed our own 3D model of the enclosure cover with a space for the di
 ## Requirements
 
 - Python >= 3.9
-- Run on Raspberry Pi
+- Run on Raspberry Pi 4 and 5
+- Raspberry Pi OS or Ubuntu
 - [SPI interface enabled](docs/EnableSPI.md)
 - 1.69" LCD display with ST7789V2 Driver
   - Waveshare 24382 - [product page](https://www.waveshare.com/1.69inch-lcd-module.htm)
@@ -47,22 +57,29 @@ Mount the enclosure cover and secure it with two screws. Make sure to arrange th
 
 ## Installation
 
-First, download the repository.
+To enable the display, the SPI interface must be enabled.  
+To do this, execute the following command and then reboot the device:
 
 ```shell
-sudo apt-get install git
+sudo sed -i '/^#dtparam=spi=on/s/^#//' /boot/firmware/config.txt
+sudo reboot
+```
+
+Download the repository.
+
+```shell
+sudo apt-get -y install git
 git clone https://github.com/Web3-Pi/raspberry-pi-lcd-dashboard.git
 ```
 
-Then, you can run the program as a service. The program will start automatically with the system startup.
-
+Then, you can run the program as a service. The program will start automatically with the system startup.  
 Alternatively, you can run it once. The program will stop when you close the console.
 
 ### Run as a service - (recommended)   
 
 ```shell
 cd raspberry-pi-lcd-dashboard
-chmod +x create_service.sh
+chmod +x *.sh
 sudo ./create_service.sh
 ```
 
@@ -77,7 +94,7 @@ Note: Do not use both methods simultaneously.
 
 ```shell
 cd raspberry-pi-lcd-dashboard
-chmod +x run.sh
+chmod +x *.sh
 ./run.sh
 ```
 To stop the program, press Ctrl+C.

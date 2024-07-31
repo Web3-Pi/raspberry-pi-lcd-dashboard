@@ -2,7 +2,28 @@
 Author: Robert Mordzon
 Organization: Web3Pi
 Date: 2024-07-29
-Description: Unique hardware dashboard for Raspberry Pi 4/5.
+Description:
+Unique hardware LCD dashboard for Raspberry Pi 4 asd Raspberry Pi 5.
+
+This project allows you to install a color LCD display in the Argon Neo 5 case and display the following system parameters:
+- CPU Usage
+- CPU Temperature
+- RAM Usage
+- SWAP Memory Usage
+- Storage Usage
+- IP / Hostname
+- Network Traffic (eth0/WiFi)
+
+Hardware required:
+- 1.69" LCD display with ST7789V2 Driver
+  - Waveshare 24382 - [product page](https://www.waveshare.com/1.69inch-lcd-module.htm)
+  or
+  - Seeed Studio 104990802 - [product page](https://www.seeedstudio.com/1-69inch-240-280-Resolution-IPS-LCD-Display-Module-p-5755.html)
+
+SPI interface must be enabled!
+To do this, execute the following command and then reboot the device:
+sudo sed -i '/^#dtparam=spi=on/s/^#//' /boot/firmware/config.txt
+sudo reboot
 
 License: GPL-3.0 license
 Contact: robertmordzon@gmail.com
@@ -21,9 +42,11 @@ import sys
 import time
 import psutil
 import socket
-import netifaces
 import logging
+import threading
+import netifaces
 from lcd import LCD_1inch69
+from collections import deque
 from PIL import Image, ImageDraw, ImageFont
 
 # Choose how to display CPU usage percentages
@@ -41,8 +64,10 @@ device = 0
 # Text colors
 C_BG = '#00129A' #LCD bacground
 C_T1 = '#FFFFFF' #main text
-C_T2 = '#A1A1A1' #text on top
-C_T3 = '#A1A1A1' #text on bottom
+C_T2 = '#c9c9c9' #text on top
+C_T3 = '#c9c9c9' #text on bottom
+C_W3P = ['#d5c1ee', '#e0cce4', '#c2f0ba', '#bfc7c0', '#c2cbe6', '#d5c2b7', '#b4ffe1', '#ced0e7', '#e2c9c1', '#cee8f8',
+     '#e4d9d9', '#dccfc3', '#dee7f3', '#e4e9e1', '#b9c6dc', '#bdb8e3'] #colors for Web3Pi.io text
 
 logging.basicConfig(
     format='%(asctime)s %(levelname)-8s %(message)s',
@@ -50,7 +75,7 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S')
 
 def main():
-    logging.info('Hardware Monitor Start')
+    logging.info('Raspberry Pi Hardware Monitor Start')
     # chceck sensors avability
     if not hasattr(psutil, "sensors_temperatures"):
         logging.error("sensors_temperatures not supported")
@@ -89,15 +114,27 @@ def main():
     splash_time = 5
     time.sleep(splash_time - 1) # how long to show splash image (Web3Pi logo)
 
+    get_ip_address()
+
+    # Create the ul/dl thread and a deque of length 1 to hold the ul/dl- values
+    global transfer_rate
+    transfer_rate = deque(maxlen=1)
+    global net_interface
+    t = threading.Thread(target=calc_ul_dl, args=(1,net_interface))
+
+    # The program will exit if there are only daemonic threads left.
+    t.daemon = True
+    t.start()
+
     low_frequency_tasks()
     high_frequency_tasks()
     medium_frequency_tasks()
 
     time.sleep(1)
-
     try:
         # Get the current time (in seconds)
         next_time = time.time() + 1
+        C_W3P_index = 0
         skip = 0
         logging.info('Entering forever loop')
         while True:
@@ -117,36 +154,22 @@ def main():
 
                 # Draw vertical lines
                 draw.line([(240 / 3, 0), (240 / 3, (280 / 3) * 2)], fill="BLACK", width=2, joint=None)
-                draw.line([((240 / 3) * 2, 0), ((240 / 3) * 2, (280 / 3) * 2)], fill="BLACK", width=2, joint=None)
+                draw.line([((240 / 3) * 2, 0), ((240 / 3) * 2, (280 / 3) * 2  -22)], fill="BLACK", width=2, joint=None)
 
-                # Draw vertical lines
+                # Draw horizontal lines
                 draw.line([(0, 280 / 3), (240, 280 / 3)], fill="BLACK", width=2, joint=None)
                 draw.line([(0, (280 / 3) * 2), (240, (280 / 3) * 2)], fill="BLACK", width=2, joint=None)
-
-                # # CPU
-                # x = 0
-                # y = 0
-                # draw.text((120 + x, 108 + y), 'CPU', fill=C_T2, font=Font2, anchor="mm")
-                # draw.text((120 + x, 140 + y), f'{int(cpu_percent)}',
-                #           fill=f'{value_to_hex_color_cpu_usage(int(cpu_percent))}', font=Font1, anchor="mm")
-                # draw.text((145 + x, 170 + y), '%', fill=C_T2, font=Font2, anchor="mm")
-                #
+                draw.line([((240 / 3), (280 / 3) * 2 - 22), (240, (280 / 3) * 2 - 22)], fill="BLACK", width=2, joint=None)
 
                 # CPU
                 x = 0
                 y = 0
-                draw.text((120 + x, 108 + y), 'CPU', fill=C_T2, font=Font2, anchor="mm")
-
+                draw.text((118 + x, 108 + y), 'CPU', fill=C_T2, font=Font2, anchor="mm")
                 if SHOW_PER_CORE:
                     draw.text((120 + x, 140 + y), f'{int(cpu_percent)}', fill=f'{value_to_hex_color_cpu_usage_400(int(cpu_percent))}', font=Font1, anchor="mm")
-                    draw.text((150 + x, 108 + y), '%', fill=C_T2, font=Font3, anchor="mm")
                 else:
                     draw.text((120 + x, 140 + y), f'{int(cpu_percent)}', fill=f'{value_to_hex_color_cpu_usage(int(cpu_percent))}', font=Font1, anchor="mm")
                     draw.text((150 + x, 145 + y), '%', fill=C_T2, font=Font3, anchor="mm")
-                draw.text((145 + x, 170 + y), '%', fill=C_T2, font=Font2, anchor="mm")
-                # ct = int(cpu_temp)
-                #draw.text((122 + x, 170 + y), f'{ct}°C', fill=C_T2, font=Font2, anchor="mm")
-
 
 
                 # RAM
@@ -161,7 +184,7 @@ def main():
                 y = 0
                 draw.text((120 + x, 108 + y), 'DISK', fill=C_T2, font=Font2, anchor="mm")
                 draw.text((120 + x, 140 + y), f'{int(disk.percent)}%', fill=C_T1, font=Font1, anchor="mm")
-                draw.text((122 + x, 170 + y), f'{disk_free_tb:.2f}TB', fill=C_T2, font=Font3, anchor="mm")
+                draw.text((122 + x, 170 + y), f'{disk_free_gb:.1f}GB', fill=C_T2, font=Font3, anchor="mm")
 
                 # CPU TEMP
                 x = 0
@@ -171,12 +194,30 @@ def main():
                 draw.text((120 + x, 140 + y), f'{ct}', fill=C_T1, font=Font1, anchor="mm")
                 draw.text((145 + x, 170 + y), '°C', fill=C_T2, font=Font2, anchor="mm")
 
+                # Network
+                x = -80
+                y = -90
+                draw.text((120 + x, 108 + y), net_interface, fill=C_T2, font=Font2, anchor="mm")
+                global net_u, net_d
+                if net_d >= 100:
+                    draw.text((85 + x, 135 + y), f"D:{net_d:.0f}", fill=C_T1, font=Font3, anchor="lm")
+                else:
+                    draw.text((85 + x, 135 + y), f"D:{net_d:.1f}", fill=C_T1, font=Font3, anchor="lm")
+
+                if net_d >= 100:
+                    draw.text((85 + x, 155 + y), f"U:{net_u:.0f}", fill=C_T1, font=Font3, anchor="lm")
+                else:
+                    draw.text((85 + x, 155 + y), f"U:{net_u:.1f}", fill=C_T1, font=Font3, anchor="lm")
+
+                draw.text((135 + x, 176 + y), 'Mbps', fill=C_T2, font=Font3, anchor="mm")
+
                 # SWAP
                 x = 80
                 y = 0
-                draw.text((120 + x, 108 + y), 'SWAP', fill=C_T2, font=Font2, anchor="mm")
+                draw.text((115 + x, 108 + y), 'SWAP', fill=C_T2, font=Font2, anchor="mm")
                 draw.text((120 + x, 140 + y), f'{int(swap.percent)}', fill=C_T1, font=Font1, anchor="mm")
-                draw.text((145 + x, 170 + y), '%', fill=C_T2, font=Font2, anchor="mm")
+                draw.text((153 + x, 145 + y), '%', fill=C_T2, font=Font2, anchor="mm")
+                #draw.text((153 + x, 110 + y), '%', fill=C_T2, font=Font2, anchor="mm")
 
                 # Local IP / HostName
                 x = 40
@@ -185,13 +226,16 @@ def main():
                 draw.text((120, 170 + y - 35), f'{ip_local_address}', fill=C_T1, font=Font3, anchor="mm")
                 draw.text((120, 170 + y - 10), f'{hostname}.local', fill=C_T1, font=Font3, anchor="mm")
 
-
-
+                # Web3Pi.io text
+                draw.text((165, 80 + y), 'Web3Pi.io', fill=C_W3P[C_W3P_index], font=Font3, anchor="mm")
+                if(C_W3P_index < len(C_W3P) - 1):
+                    C_W3P_index += 1
+                else:
+                    C_W3P_index = 0
 
 
                 # Send image to lcd display
                 disp.ShowImage(image1)
-
 
                 skip += 1
 
@@ -214,7 +258,7 @@ def main():
 
 def print_stats():
     try:
-        global cpu_percent, cpu_temp, disk, disk_free_tb, ip_local_address, ram, swap
+        global cpu_percent, cpu_temp, disk, disk_free_gb, ip_local_address, ram, swap
         logging.info(f'Values -> CPU: {int(cpu_percent)}%, CPU_TEMP: {int(cpu_temp)}°C, RAM: {int(mem.percent)}%, SWAP: {int(swap.percent)}%, DISK: {int(disk.percent)}%')
     except Exception as error:
         logging.error("An exception occurred: " + type(error).__name__)
@@ -251,6 +295,30 @@ def get_cpu_temperature():
     return cpu_temp
 
 
+def calc_ul_dl(dt=1, interface="eth0"):
+    try:
+        t0 = time.time()
+        counter = psutil.net_io_counters(pernic=True)[interface]
+        tot = (counter.bytes_sent, counter.bytes_recv)
+
+        global net_u, net_d
+        while True:
+            last_tot = tot
+            time.sleep(dt)
+            counter = psutil.net_io_counters(pernic=True)[interface]
+            t1 = time.time()
+            tot = (counter.bytes_sent, counter.bytes_recv)
+            ul, dl = [
+                (now - last) / (t1 - t0) / 1000.0
+                for now, last in zip(tot, last_tot)
+            ]
+            net_u = ul / 1024 * 8
+            net_d = dl / 1024 * 8
+            t0 = time.time()
+    except Exception as error:
+        logging.error("An exception occurred: " + type(error).__name__)
+
+
 def high_frequency_tasks():
     logging.debug("high_frequency_tasks()")
     global cpu_percent
@@ -266,6 +334,7 @@ def high_frequency_tasks():
 
     cpu_temp = get_cpu_temperature()
     #logging.info(f'CPU_TEMP= {getCpuTemperature()} °C')
+
 
 
 def medium_frequency_tasks():
@@ -287,11 +356,12 @@ def medium_frequency_tasks():
 def low_frequency_tasks():
     logging.debug("low_frequency_tasks()")
     global disk
-    global disk_free_tb
+    global disk_free_gb
     global ip_local_address
     global exec, node, cons
     disk = psutil.disk_usage("/")
-    disk_free_tb = disk.used / 1024 / 1024 / 1024 / 1024
+    disk_free_gb = disk.used / (1024 ** 3)
+    #disk_free_tb = disk.used / 1024 / 1024 / 1024 / 1024
     ip_local_address = get_ip_address()
 
 
@@ -362,6 +432,8 @@ def get_ip_address():
             if ip_info:
                 ip_address = ip_info[0]['addr']
                 if ip_address and not ip_address.startswith("127."):
+                    global net_interface
+                    net_interface = interface
                     return ip_address
         except ValueError:
             continue

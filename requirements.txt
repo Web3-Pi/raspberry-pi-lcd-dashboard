@@ -2,6 +2,6 @@ psutil~=6.0.0
 lgpio~=0.2.2.0
 pillow~=10.4.0
 numpy~=2.0.0
-spidev~=3.6
+spidev
 gpiozero~=2.0.1
 netifaces~=0.11.0
