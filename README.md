@@ -1,5 +1,14 @@
 # Raspberry Pi LCD Dashboard
 
+<p align="left">
+<a href="https://hits.seeyoufarm.com"><img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2FWeb3-Pi%2Fraspberry-pi-lcd-dashboard&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=hits&edge_flat=false"/></a>
+<a href="/LICENSE"><img src="https://img.shields.io/badge/license-GPL-blue.svg" alt="license" /></a>
+<!-- Pixel Code for https://app.tinyanalytics.io/ -->
+<script defer src="https://app.tinyanalytics.io/pixel/oI0saWxR5Er6XgmQ"></script>
+<!-- END Pixel Code -->
+</p>
+
+
 ***Unique hardware dashboard for Raspberry Pi 4 and Raspberry Pi 5 with 3D model for Argon Neo 5 enclosure*** 
 
 ***This repository is part of the [Web3Pi](https://www.web3pi.io) initiative, which enables the automated deployment of a full Ethereum node on a Raspberry Pi.***
