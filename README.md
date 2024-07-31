@@ -17,7 +17,7 @@ This project allows you to install a color LCD display in the Argon Neo 5 case a
 We have designed our own 3D model of the enclosure cover with a space for the display. The assembly is simple, using snap-fits, with no tools required. The models are open-source, so anyone can print them on a 3D printer. The source code is also open-source, allowing users to add new functionalities, customize it to their needs, or add support for new displays.
 
 <p align="center">
-  <img src="docs/img/ArgonMainImage1.jpg">
+  <img src="docs/img/ArgonMainImage1.png">
 </p>
 
 
