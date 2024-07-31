@@ -95,7 +95,7 @@ def main():
     # Clear display.
     disp.clear()
     # Set the backlight to 100
-    disp.bl_DutyCycle(100) # ToDo: Fix hardware PWM on Rpi 5
+    disp.bl_DutyCycle(60) # ToDo: Fix hardware PWM on Rpi 5
     # If backlight is flickering a quick fix is to connect BL pin to 3.3V on Rpi to set backlight to 100%
 
     # https://www.fontsquirrel.com/fonts/jetbrains-mono
@@ -149,7 +149,7 @@ def main():
 
 
                 # Draw background
-                image1 = Image.open('./img/lcdbg2.png')
+                image1 = Image.open('./img/lcdbg1.png')
                 draw = ImageDraw.Draw(image1)
 
                 # Draw vertical lines

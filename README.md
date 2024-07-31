@@ -95,7 +95,7 @@ Note: Do not use both methods simultaneously.
 ```shell
 cd raspberry-pi-lcd-dashboard
 chmod +x *.sh
-./run.sh
+sudo ./run.sh
 ```
 To stop the program, press Ctrl+C.
 

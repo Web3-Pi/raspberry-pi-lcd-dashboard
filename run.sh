@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# Check if the script is run with sudo
+if [[ $EUID -ne 0 ]]; then
+   echo "This script must be run with sudo"
+   exit 1
+fi
+
 echo "The script you are running has:"
 echo "basename: [$(basename "$0")]"
 echo "dirname : [$(dirname "$0")]"
@@ -21,6 +27,8 @@ if [ ! -f "requirements.txt" ]; then
     echo "requirements.txt file not found in the current directory."
     exit 0
 fi
+
+sudo apt-get -y install python3-venv python3-pip
 
 # Create a virtual environment if it does not exist
 if [ ! -d "venv" ]; then
