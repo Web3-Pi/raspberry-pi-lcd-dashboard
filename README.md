@@ -1,5 +1,9 @@
 # Raspberry Pi LCD Dashboard
 
+<p align="center">
+  <img src="docs/img/ArgonMainImage1.png">
+</p>
+
 <p align="left">
 <a href="https://hits.seeyoufarm.com"><img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Fgithub.com%2FWeb3-Pi%2Fraspberry-pi-lcd-dashboard&count_bg=%2379C83D&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=hits&edge_flat=false"/></a>
 <a href="/LICENSE"><img src="https://img.shields.io/badge/license-GPL-blue.svg" alt="license" /></a>
@@ -21,11 +25,6 @@ This project allows you to install a color LCD display in the Argon Neo 5 case a
 - Network Traffic (eth0/WiFi)
 
 We have designed our own 3D model of the enclosure cover with a space for the display. The assembly is simple, using snap-fits, with no tools required. The models are open-source, so anyone can print them on a 3D printer. The source code is also open-source, allowing users to add new functionalities, customize it to their needs, or add support for new displays.
-
-<p align="center">
-  <img src="docs/img/ArgonMainImage1.png">
-</p>
-
 
 ## Requirements
 
