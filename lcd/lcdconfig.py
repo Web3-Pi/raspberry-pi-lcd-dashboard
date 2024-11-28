@@ -33,7 +33,9 @@ import time
 import spidev
 import logging
 import numpy as np
-from gpiozero import *
+from gpiozero import DigitalOutputDevice, PWMOutputDevice, DigitalInputDevice
+from gpiozero.pins.lgpio import LGPIOFactory
+factory = LGPIOFactory()
 
 
 class RaspberryPi:
@@ -59,9 +61,9 @@ class RaspberryPi:
 
     def gpio_mode(self, Pin, Mode, pull_up=None, active_state=True):
         if Mode:
-            return DigitalOutputDevice(Pin, active_high=True, initial_value=False)
+            return DigitalOutputDevice(Pin, active_high=True, initial_value=False, pin_factory=factory)
         else:
-            return DigitalInputDevice(Pin, pull_up=pull_up, active_state=active_state)
+            return DigitalInputDevice(Pin, pull_up=pull_up, active_state=active_state, pin_factory=factory)
 
     def digital_write(self, Pin, value):
         if value:
@@ -76,7 +78,7 @@ class RaspberryPi:
         time.sleep(delaytime / 1000.0)
 
     def gpio_pwm(self, Pin):
-        return PWMOutputDevice(Pin, frequency=self.BL_freq)
+        return PWMOutputDevice(Pin, frequency=self.BL_freq, pin_factory=factory)
 
     def spi_writebyte(self, data):
         if self.SPI != None:

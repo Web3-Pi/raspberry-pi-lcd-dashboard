@@ -1,42 +1,3 @@
-"""
-Author: Robert Mordzon
-Organization: Web3Pi
-Date: 2024-07-29
-Description:
-Unique hardware LCD dashboard for Raspberry Pi 4 asd Raspberry Pi 5.
-
-This project allows you to install a color LCD display in the Argon Neo 5 case and display the following system parameters:
-- CPU Usage
-- CPU Temperature
-- RAM Usage
-- SWAP Memory Usage
-- Storage Usage
-- IP / Hostname
-- Network Traffic (eth0/WiFi)
-
-Hardware required:
-- 1.69" LCD display with ST7789V2 Driver
-  - Waveshare 24382 - [product page](https://www.waveshare.com/1.69inch-lcd-module.htm)
-  or
-  - Seeed Studio 104990802 - [product page](https://www.seeedstudio.com/1-69inch-240-280-Resolution-IPS-LCD-Display-Module-p-5755.html)
-
-SPI interface must be enabled!
-To do this, execute the following command and then reboot the device:
-sudo sed -i '/^#dtparam=spi=on/s/^#//' /boot/firmware/config.txt
-sudo reboot
-
-License: GPL-3.0 license
-Contact: robertmordzon@gmail.com
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS OR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-"""
-
 import os
 import sys
 import time
@@ -45,6 +6,7 @@ import socket
 import logging
 import threading
 import netifaces
+import signal
 from lcd import LCD_1inch69
 from collections import deque
 from PIL import Image, ImageDraw, ImageFont
@@ -59,7 +21,7 @@ RST = 27
 DC = 25
 BL = 18
 bus = 0
-device = 0
+disp = None
 
 # Text colors
 C_BG = '#00129A' #LCD bacground
@@ -73,6 +35,26 @@ logging.basicConfig(
     format='%(asctime)s %(levelname)-8s %(message)s',
     level=logging.INFO,
     datefmt='%Y-%m-%d %H:%M:%S')
+
+# Function to clear the screen
+def clear_screen():
+    global disp
+    # Create a black image of the same size as the display
+    empty_image = Image.new('RGB', (disp.width, disp.height), color=(0, 0, 0))
+    disp.ShowImage(empty_image)
+    # Optionally turn off backlight if supported
+    disp.bl_DutyCycle(0)
+    disp.module_exit()
+
+# Function to handle shutdown signals
+def handle_shutdown_signal(signum, frame):
+    logging.info("Shutting down, clearing the screen...")
+    clear_screen()
+    sys.exit(0)
+
+# Register signal handlers for SIGINT and SIGTERM
+signal.signal(signal.SIGINT, handle_shutdown_signal)
+signal.signal(signal.SIGTERM, handle_shutdown_signal)
 
 def main():
     logging.info('Raspberry Pi Hardware Monitor Start')
@@ -89,6 +71,7 @@ def main():
     hostname = get_hostname()
 
     # display with hardware SPI:
+    global disp
     disp = LCD_1inch69.LCD_1inch69()
     # Initialize library.
     disp.Init()
@@ -147,7 +130,6 @@ def main():
                 if skip % 30 == 0:
                     low_frequency_tasks()
 
-
                 # Draw background
                 image1 = Image.open('./img/lcdbg1.png')
                 draw = ImageDraw.Draw(image1)
@@ -170,7 +152,6 @@ def main():
                 else:
                     draw.text((120 + x, 140 + y), f'{int(cpu_percent)}', fill=f'{value_to_hex_color_cpu_usage(int(cpu_percent))}', font=Font1, anchor="mm")
                     draw.text((150 + x, 145 + y), '%', fill=C_T2, font=Font3, anchor="mm")
-
 
                 # RAM
                 x = 80
@@ -233,7 +214,6 @@ def main():
                 else:
                     C_W3P_index = 0
 
-
                 # Send image to lcd display
                 disp.ShowImage(image1)
 
@@ -251,10 +231,9 @@ def main():
     except Exception as error:
         logging.error("An exception occurred: " + type(error).__name__)
 
-
     logging.info('End forever loop')
-
     logging.info('Hardware Monitor End')
+    clear_screen()
 
 def print_stats():
     try:
@@ -262,7 +241,6 @@ def print_stats():
         logging.info(f'Values -> CPU: {int(cpu_percent)}%, CPU_TEMP: {int(cpu_temp)}°C, RAM: {int(mem.percent)}%, SWAP: {int(swap.percent)}%, DISK: {int(disk.percent)}%')
     except Exception as error:
         logging.error("An exception occurred: " + type(error).__name__)
-
 
 def get_cpu_temperature():
     """
@@ -294,7 +272,6 @@ def get_cpu_temperature():
 
     return cpu_temp
 
-
 def calc_ul_dl(dt=1, interface="eth0"):
     try:
         t0 = time.time()
@@ -318,7 +295,6 @@ def calc_ul_dl(dt=1, interface="eth0"):
     except Exception as error:
         logging.error("An exception occurred: " + type(error).__name__)
 
-
 def high_frequency_tasks():
     logging.debug("high_frequency_tasks()")
     global cpu_percent
@@ -335,8 +311,6 @@ def high_frequency_tasks():
     cpu_temp = get_cpu_temperature()
     #logging.info(f'CPU_TEMP= {getCpuTemperature()} °C')
 
-
-
 def medium_frequency_tasks():
     logging.debug("medium_frequency_tasks()")
 
@@ -352,7 +326,6 @@ def medium_frequency_tasks():
     # nvme_temp = getNvmeTemperature()
     # cpu_rpm = getCpuRpm()
 
-
 def low_frequency_tasks():
     logging.debug("low_frequency_tasks()")
     global disk
@@ -363,7 +336,6 @@ def low_frequency_tasks():
     disk_free_gb = disk.used / (1024 ** 3)
     #disk_free_tb = disk.used / 1024 / 1024 / 1024 / 1024
     ip_local_address = get_ip_address()
-
 
 def value_to_hex_color_cpu_usage(value):
     if not (0 <= value <= 100):
@@ -497,7 +469,6 @@ def check_python_version():
     if current_version > required_version:
         return True
     return False
-
 
 if __name__ == '__main__':
     if check_python_version():
